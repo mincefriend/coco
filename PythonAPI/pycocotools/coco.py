@@ -239,10 +239,7 @@ class COCO:
         if len(anns) == 0:
             return 0
         if 'segmentation' in anns[0] or 'keypoints' in anns[0]:
-            if 'bbox' in anns[0]:
-                datasetType = 'detections'
-            else:
-                datasetType = 'instances'
+            datasetType = 'instances'
         elif 'caption' in anns[0]:
             datasetType = 'captions'
         else:
@@ -252,6 +249,7 @@ class COCO:
             ax.set_autoscale_on(False)
             polygons = []
             color = []
+            colors = plt.cm.hsv(np.linspace(0, 1, 91)).tolist()
             for ann in anns:
                 c = (np.random.random((1, 3))*0.6+0.4).tolist()[0]
                 if 'segmentation' in ann:
@@ -289,29 +287,25 @@ class COCO:
                             plt.plot(x[sk],y[sk], linewidth=3, color=c)
                     plt.plot(x[v>0], y[v>0],'o',markersize=8, markerfacecolor=c, markeredgecolor='k',markeredgewidth=2)
                     plt.plot(x[v>1], y[v>1],'o',markersize=8, markerfacecolor=c, markeredgecolor=c, markeredgewidth=2)
+                if 'bbox' in ann:
+                    cat_id = ann['category_id']
+                    bbox = ann['bbox']
+                    coords = (bbox[0], bbox[1]), bbox[2], bbox[3]
+                    ax.add_patch(plt.Rectangle(*coords, fill=False, edgecolor=c, linewidth=3))
+                    name = 'Unknown'
+                    for cat in self.dataset['categories']:
+                        if ann['category_id'] == cat['id']:
+                            name = cat['name']
+                    if 'score' in ann:
+                        score = ann['score']
+                        display_text = '%s: %.2f' % (name, score)
+                    else:
+                        display_text = name
+                    ax.text(bbox[0], bbox[1], display_text, bbox={'facecolor':c, 'alpha':0.5})
             p = PatchCollection(polygons, facecolor=color, linewidths=0, alpha=0.4)
             ax.add_collection(p)
             p = PatchCollection(polygons, facecolor='none', edgecolors=color, linewidths=2)
             ax.add_collection(p)
-        elif datasetType == 'detections':
-            ax = plt.gca()
-            colors = plt.cm.hsv(np.linspace(0, 1, 91)).tolist()
-            for ann in anns:
-                cat_id = ann['category_id']
-                color = colors[cat_id]
-                bbox = ann['bbox']
-                coords = (bbox[0], bbox[1]), bbox[2], bbox[3]
-                ax.add_patch(plt.Rectangle(*coords, fill=False, edgecolor=color, linewidth=3))
-                name = 'Unknown'
-                for cat in self.dataset['categories']:
-                    if ann['category_id'] == cat['id']:
-                        name = cat['name']
-                if 'score' in ann:
-                    score = ann['score']
-                    display_text = '%s: %.2f' % (name, score)
-                else:
-                    display_text = name
-                ax.text(bbox[0], bbox[1], display_text, bbox={'facecolor':color, 'alpha':0.5})
         elif datasetType == 'captions':
             for ann in anns:
                 print(ann['caption'])
